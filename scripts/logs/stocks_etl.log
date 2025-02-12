@@ -1,0 +1,21 @@
+2025-02-12 09:50:24,219 - INFO - ETL process started.
+2025-02-12 09:50:24,219 - INFO - Processing tickers: ('AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN')
+2025-02-12 09:50:24,267 - INFO - [AAPL] No new data available.
+2025-02-12 09:50:24,420 - INFO - [MSFT] No new data available.
+2025-02-12 09:50:24,466 - INFO - [NVDA] No new data available.
+2025-02-12 09:50:24,510 - INFO - [GOOGL] No new data available.
+2025-02-12 09:50:24,553 - INFO - [AMZN] No new data available.
+2025-02-12 09:50:24,553 - INFO - All tickers returned empty data. Exiting script.
+2025-02-12 09:50:24,553 - INFO - ETL process completed.
+2025-02-12 11:17:05,956 - INFO - ETL process started.
+2025-02-12 11:17:05,957 - INFO - Processing tickers: ('AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN')
+2025-02-12 11:17:06,006 - ERROR - Database connection failed: connection to server at "localhost" (::1), port 5432 failed: FATAL:  password authentication failed for user "ThinkPad X1 Extreme"
+Traceback (most recent call last):
+  File "D:\Projects\etl-workflow-airflow\scripts\stocks_etl.py", line 30, in get_db_connection
+    return connect(database=db, user=user, password=passwd)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projects\etl-workflow-airflow\.venv\Lib\site-packages\psycopg2\__init__.py", line 122, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.OperationalError: connection to server at "localhost" (::1), port 5432 failed: FATAL:  password authentication failed for user "ThinkPad X1 Extreme"
+
