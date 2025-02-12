@@ -25,7 +25,7 @@ passwd = os.getenv('PASSWORD')
 tickers = tuple(os.getenv('TICKERS').split(','))
 
 def get_db_connection():
-    """Establish a connection to the PostgreSQL database."""
+    # Establish a connection to the PostgreSQL database.
     try:
         return connect(database=db, user=user, password=passwd)
     except Exception as e:
