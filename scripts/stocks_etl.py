@@ -145,14 +145,7 @@ def load(transformed_data):
                 query = sql.SQL("""
                                 INSERT INTO {} (date, ticker, open, high, low, close, volume, vwap)
                                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                                ON CONFLICT (date, ticker) 
-                                DO UPDATE SET 
-                                    open = EXCLUDED.open,
-                                    high = EXCLUDED.high,
-                                    low = EXCLUDED.low,
-                                    close = EXCLUDED.close,
-                                    volume = EXCLUDED.volume,
-                                    vwap = EXCLUDED.vwap;
+                                ON CONFLICT (date, ticker) DO NOTHING;
                                 """).format(sql.Identifier(table))
 
                 cur.executemany(query, data_split)
