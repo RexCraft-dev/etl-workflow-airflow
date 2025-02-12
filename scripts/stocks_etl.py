@@ -36,6 +36,7 @@ def extract():
     # Extract stock data from Yahoo Finance based on the last available date in the database.
     logging.info("ETL process started.")
     logging.info(f"Processing tickers: {tickers}")
+    
     raw_data = []
 
     for ticker in tickers:
@@ -111,7 +112,8 @@ def transform(raw_data):
                                'Volume': 'volume'}, 
                                inplace=True)
             
-            cols = ['date', 'ticker', 'open', 'high', 'low', 'close', 'volume', 'vwap']
+            cols = ['date', 'ticker', 'open', 'high', 
+                    'low', 'close', 'volume', 'vwap']
             df = df[cols]
 
             if data_transformed is None:
@@ -136,26 +138,33 @@ def load(transformed_data):
     
     data_split = [tuple(row) for row in transformed_data.itertuples(index=False, name=None)]
 
-    with get_db_connection() as conn:
-        with conn.cursor() as cur:
-            # Insert data into the database, updating existing records on conflict
-            query = sql.SQL("""
-                            INSERT INTO {} (date, ticker, open, high, low, close, volume, vwap)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                            ON CONFLICT (date, ticker) 
-                            DO UPDATE SET 
-                                open = EXCLUDED.open,
-                                high = EXCLUDED.high,
-                                low = EXCLUDED.low,
-                                close = EXCLUDED.close,
-                                volume = EXCLUDED.volume,
-                                vwap = EXCLUDED.vwap;
-                            """).format(sql.Identifier(table))
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                # Insert data into the database, updating existing records on conflict
+                query = sql.SQL("""
+                                INSERT INTO {} (date, ticker, open, high, low, close, volume, vwap)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (date, ticker) 
+                                DO UPDATE SET 
+                                    open = EXCLUDED.open,
+                                    high = EXCLUDED.high,
+                                    low = EXCLUDED.low,
+                                    close = EXCLUDED.close,
+                                    volume = EXCLUDED.volume,
+                                    vwap = EXCLUDED.vwap;
+                                """).format(sql.Identifier(table))
 
-            cur.executemany(query, data_split)
-            conn.commit()
+                cur.executemany(query, data_split)
+                conn.commit()
 
-    logging.info(f'Database updated successfully: {len(transformed_data)} total rows added.')
+                logging.info(f'Database updated successfully: {len(transformed_data)} total rows added.')
+                
+    except Error as db_err:
+        logging.error(f"Database Error: {db_err}")
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}", exc_info=True)
+
     logging.info("ETL process completed.")
 
 def run_stocks_etl():
