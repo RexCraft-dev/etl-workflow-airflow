@@ -37,7 +37,7 @@ def extract():
     logging.info("ETL process started.")
     logging.info(f"Processing tickers: {tickers}")
     
-    raw_data = []
+    raw_data = None
 
     for ticker in tickers:
         try:
@@ -68,10 +68,16 @@ def extract():
 
             if df.empty:
                 logging.warning(f"[{ticker}] No new data found.")
-                raw_data.append(pd.DataFrame())
                 continue
 
-            raw_data.append(df)
+            # Add ticker column
+            df['ticker'] = ticker
+
+            if raw_data is None:
+                raw_data = df
+            else:
+                raw_data = pd.concat([raw_data, df], ignore_index=True)
+
             logging.info(f'[{ticker}] Data downloaded successfully. ({len(df)})')
 
         except Error as db_err:
@@ -79,7 +85,7 @@ def extract():
         except Exception as e:
             logging.error(f"Unexpected error during extraction for [{ticker}]: {e}", exc_info=True)
 
-    if all(df.empty for df in raw_data):
+    if raw_data is None:
         logging.info("All tickers returned empty data. Exiting script.")
         logging.info("ETL process completed.")
         sys.exit(0)
@@ -89,44 +95,23 @@ def extract():
 def transform(raw_data):
     # Transform raw stock data by renaming columns and calculating VWAP.
     logging.info("Transforming data...")
-    data_transformed = None
 
-    for ticker, df in zip(tickers, raw_data):
-        try:
-            if df.empty:
-                logging.info(f'[{ticker}] No data available...')
-                continue
+    raw_data['vwap'] = round((raw_data['Close'] * raw_data['Volume']).cumsum() / raw_data['Volume'].cumsum(), 2)
 
-            # Add ticker symbol to the dataset
-            df['ticker'] = ticker
-            
-            # Calculate VWAP (Volume Weighted Average Price)
-            df['vwap'] = round((df['Close'] * df['Volume']).cumsum() / df['Volume'].cumsum(), 2)
+    # Rename columns to match database schema
+    raw_data.rename(columns={'Date': 'date', 
+                        'Close': 'close', 
+                        'High': 'high', 
+                        'Low': 'low', 
+                        'Open': 'open', 
+                        'Volume': 'volume'}, 
+                        inplace=True)
+    
+    cols = ['date', 'ticker', 'open', 'high', 
+            'low', 'close', 'volume', 'vwap']
+    transformed_data = raw_data[cols]
 
-            # Rename columns to match database schema
-            df.rename(columns={'Date': 'date', 
-                               'Close': 'close', 
-                               'High': 'high', 
-                               'Low': 'low', 
-                               'Open': 'open', 
-                               'Volume': 'volume'}, 
-                               inplace=True)
-            
-            cols = ['date', 'ticker', 'open', 'high', 
-                    'low', 'close', 'volume', 'vwap']
-            df = df[cols]
-
-            if data_transformed is None:
-                data_transformed = df
-            else:
-                data_transformed = pd.concat([data_transformed, df], ignore_index=True)
-
-            logging.info(f'[{ticker}] Data transformed successfully.')
-
-        except Exception as e:
-            logging.error(f"Data transformation failed for {ticker}: {e}")
-
-    return data_transformed
+    return transformed_data
 
 def load(transformed_data):
     # Load transformed stock data into the PostgreSQL database.
